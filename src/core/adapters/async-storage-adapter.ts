@@ -34,4 +34,23 @@ export class AsyncStorageAdapter {
       console.log("Error to store value", error);
     }
   }
+
+  async update(
+    schema: string,
+    id: string,
+    data: { [k: string]: any }
+  ): Promise<void> {
+    const tasks = await this.get(schema);
+    if (!tasks) return;
+    let newTasks: any[] = [];
+    if (Array.isArray(tasks)) {
+      const result = tasks.filter((task) => task.title != id);
+      newTasks.push(...result);
+      newTasks.push(data);
+    } else {
+      newTasks.push(tasks);
+      newTasks.push(data);
+    }
+    await this.storeMany(schema, newTasks);
+  }
 }

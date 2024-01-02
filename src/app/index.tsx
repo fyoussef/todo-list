@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { getTasks } from "../core/usecases/get-tasks";
 import { TaskCard } from "../components/task-card";
@@ -18,6 +18,7 @@ import { removeTask } from "../core/usecases/remove-task";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const { push } = useRouter();
 
   async function fetchTasks() {
     const tasks = await getTasks();
@@ -52,7 +53,19 @@ export default function App() {
   }
 
   function onPressTask(taskTitle: string, taskDescription: string) {
-    Alert.alert(taskTitle, taskDescription);
+    Alert.alert(taskTitle, taskDescription, [
+      {
+        text: "Editar tarefa",
+        onPress: () =>
+          push({
+            pathname: "/add-task",
+            params: { taskTitle },
+          }),
+      },
+      {
+        text: "Fechar",
+      },
+    ]);
   }
 
   return (

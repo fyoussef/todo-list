@@ -7,25 +7,62 @@ import {
   Pressable,
   Alert,
 } from "react-native";
-import { Link } from "expo-router";
-import { useState } from "react";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { storeTask } from "../core/usecases/store-task";
+import { updateTask } from "../core/usecases/update-task";
+import { getTasks } from "../core/usecases/get-tasks";
 
 export default function AddTasks() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const disableAddBtn = title == "" || description == "";
+  const searchParams = useLocalSearchParams();
+  const ctx = {
+    isUpdate: searchParams.taskTitle ? true : false,
+    params: { taskTitle: searchParams.taskTitle },
+  };
+  const { push } = useRouter();
+
+  useEffect(() => {
+    if (ctx.isUpdate) {
+      loadUpdateContext();
+    }
+  }, [ctx.isUpdate]);
+
+  async function loadUpdateContext() {
+    const tasks = await getTasks();
+    const taskToUpdate = tasks.find((t) => t.title == searchParams.taskTitle);
+    setTitle(taskToUpdate?.title ?? "");
+    setDescription(taskToUpdate?.description ?? "");
+  }
 
   async function handleSaveTask() {
-    await storeTask({ title, description });
-    Alert.alert("Tudo certo!", "Sua tarefa foi adicionada com sucesso.");
+    const input = { title, description };
+    if (ctx.isUpdate) {
+      await updateTask({
+        oldTaskTitle: ctx.params.taskTitle as string,
+        ...input,
+      });
+    } else {
+      await storeTask(input);
+    }
+    Alert.alert(
+      "Tudo certo!",
+      `Sua tarefa foi ${
+        ctx.isUpdate ? "atualizada" : "adicionada"
+      }  com sucesso.`
+    );
+    if (ctx.isUpdate) {
+      return push("/");
+    }
     setTitle("");
     setDescription("");
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Adicionar</Text>
+      <Text style={styles.title}>{ctx.isUpdate ? "Editar" : "Adicionar"}</Text>
       <TextInput
         style={styles.taskTitleInput}
         placeholder="Título"
@@ -58,7 +95,9 @@ export default function AddTasks() {
           onPress={handleSaveTask}
           disabled={disableAddBtn}
         >
-          <Text style={styles.buttonTxt}>ADICIONAR TAREFA</Text>
+          <Text style={styles.buttonTxt}>
+            {ctx.isUpdate ? "EDITAR" : "ADICIONAR"} TAREFA
+          </Text>
         </Pressable>
       </View>
     </View>
